@@ -1,0 +1,87 @@
+services:
+	aslan:
+		cap_add:
+			- SYS_PTRACE
+		command: bash -c "./run"
+		devices:
+			- /dev/bus/usb:/dev/bus/usb
+			- /dev/dri:/dev/dri
+			- /dev/input:/dev/input
+		environment:
+			DISPLAY: ${DISPLAY}
+			NVIDIA_DRIVER_CAPABILITIES: compute,utility,graphics,display
+			NVIDIA_VISIBLE_DEVICES: all
+			LD_LIBRARY_PATH: /usr/local/nvidia/lib64
+		image: vsc-aslan-9467bbbe9683e1f467882b60ded35b2b-uid
+		network_mode: host
+		privileged: true
+		stdin_open: true
+		stop_grace_period: 100ms
+		tty: true
+		user: aslan_user
+		volumes:
+			- ${HOME}/.ssh:/root/.ssh
+			- ${HOME}/repos/aslan:/catkin_ws
+			- /lib/modules:/lib/modules
+			- /tmp/.X11-unix:/tmp/.X11-unix
+		working_dir: /catkin_ws
+	carla-sim:
+		command: bash -c "tmux new -d -s default; tmux send-keys './CarlaUE4.sh -nosound -RenderOffScreen -benchmark -fps=20 -quality-level=Low' ENTER; bash"
+		deploy:
+			resources:
+				reservations:
+					devices:
+						- driver: nvidia
+						  count: 1
+						  capabilities: [gpu]
+		environment:
+			DISPLAY: :1
+		image: karlica
+		network_mode: host
+		privileged: true
+		stdin_open: true
+		stop_grace_period: 100ms
+		tty: true
+	openpilot-client:
+		command: bash -c "./tmux_script.sh"
+		deploy:
+			resources:
+				reservations:
+					devices:
+						- driver: nvidia
+						  count: 1
+						  capabilities: [gpu]
+		environment:
+			DISPLAY: ${DISPLAY}
+			QT_X11_NO_MITSHM: 1
+			DEBUG_OPENPILOT_BRIDGE: ${DEBUG_OPENPILOT_BRIDGE}
+			SHOULD_RUN_OPENPILOT_SIM: ${SHOULD_RUN_OPENPILOT_SIM}
+		image: openpajo-sim
+		network_mode: host
+		privileged: true
+		shm_size: 1G
+		stdin_open: true
+		stop_grace_period: 100ms
+		tty: true
+		volumes:
+			- ${HOME}/repos/openpilot:/openpilot
+			- ${HOME}/repos/openpilot_bridge:/openpilot_bridge
+			- /tmp/.X11-unix:/tmp/.X11-unix
+		working_dir: /openpilot_bridge
+	inference-can-bridge:
+		command: bash -c "tmux new -d -s default; tmux send-keys '/root/mypython -u /opt/project/inference_can_bridge_node.py' ENTER; bash"
+		environment:
+			DEBUG_OPENPILOT_INFERENCE_CAN_BRIDGE: ${DEBUG_OPENPILOT_INFERENCE_CAN_BRIDGE}
+			DISPLAY: ${DISPLAY}
+			PYTHONPATH: /opt/project:/opt/project/common
+			PYTHONUNBUFFERED: 1
+			QT_X11_NO_MITSHM: 1
+		image: can_bridge
+		network_mode: host
+		stdin_open: true
+		stop_grace_period: 100ms
+		tty: true
+		user: user
+		volumes:
+			- ${HOME}/repos/inference_node:/opt/project
+		working_dir: /opt/project
