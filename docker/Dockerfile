@@ -46,7 +46,7 @@ USER user
 #RUN echo "source /catkin_ws/devel/setup.bash" >> ~/.bashrc
 
 WORKDIR ~
-COPY environment_can_bridge.yml environment.yml
+COPY environment.yml environment.yml
 
 RUN conda env create
 #RUN conda env create -vv python=3.8.12
