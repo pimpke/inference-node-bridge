@@ -11,10 +11,10 @@ def log_mono_timestamp_to_ros_timestamp(log_mono_time: int) -> int:
     return rospy.Time.now().to_nsec() - time.clock_gettime_ns(time.CLOCK_BOOTTIME) + log_mono_time
 
 
-rospy.init_node('inference_can_bridge_node')
+rospy.init_node('inference_node_bridge')
 
 try:
-    if os.environ['DEBUG_OPENPILOT_INFERENCE_CAN_BRIDGE'] == '1':
+    if os.environ['DEBUG_INFERENCE_NODE_BRIDGE'] == '1':
       import pydevd_pycharm
 
       pydevd_pycharm.settrace('localhost', port=1235, stdoutToServer=True, stderrToServer=True)
