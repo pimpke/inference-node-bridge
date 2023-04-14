@@ -1,7 +1,7 @@
 services:
     aslan:
         build:
-            context: ${HOME}/repos/aslan
+            context: ${ASLAN_PATH}
             dockerfile: aslan_docker/Dockerfile
         cap_add:
             - SYS_PTRACE
@@ -12,9 +12,10 @@ services:
             - /dev/input:/dev/input
         environment:
             DISPLAY: ${DISPLAY}
+            LD_LIBRARY_PATH: /usr/local/nvidia/lib64
             NVIDIA_DRIVER_CAPABILITIES: compute,utility,graphics,display
             NVIDIA_VISIBLE_DEVICES: all
-            LD_LIBRARY_PATH: /usr/local/nvidia/lib64
+            SHOULD_BUILD_ASLAN: ${SHOULD_BUILD_ASLAN}
         network_mode: host
         privileged: true
         stdin_open: true
@@ -23,13 +24,13 @@ services:
         user: aslan_user
         volumes:
             - ${HOME}/.ssh:/root/.ssh
-            - ${HOME}/repos/aslan:/catkin_ws
+            - ${ASLAN_PATH}:/catkin_ws
             - /lib/modules:/lib/modules
             - /tmp/.X11-unix:/tmp/.X11-unix
         working_dir: /catkin_ws
     carla-sim:
         build:
-            context: ${HOME}/repos/openpilot-bridge
+            context: ${OPENPILOT_BRIDGE_PATH}
             dockerfile: docker/carla.Dockerfile
         command: bash -c "tmux new -d -s default; tmux send-keys './CarlaUE4.sh -nosound -RenderOffScreen -benchmark -fps=20 -quality-level=Low' ENTER; bash"
         deploy:
@@ -48,7 +49,7 @@ services:
         tty: true
     openpilot-client:
         build:
-            context: ${HOME}/repos/openpilot-bridge
+            context: ${OPENPILOT_BRIDGE_PATH}
             dockerfile: docker/openpilot.Dockerfile
         command: bash -c "./tmux_script.sh"
         deploy:
@@ -62,6 +63,7 @@ services:
             DISPLAY: ${DISPLAY}
             QT_X11_NO_MITSHM: 1
             DEBUG_OPENPILOT_BRIDGE: ${DEBUG_OPENPILOT_BRIDGE}
+            SHOULD_BUILD_OPENPILOT: ${SHOULD_BUILD_OPENPILOT}
             SHOULD_RUN_OPENPILOT_SIM: ${SHOULD_RUN_OPENPILOT_SIM}
         network_mode: host
         privileged: true
@@ -70,8 +72,8 @@ services:
         stop_grace_period: 100ms
         tty: true
         volumes:
-            - ${HOME}/repos/openpilot:/openpilot
-            - ${HOME}/repos/openpilot-bridge:/openpilot-bridge
+            - ${OPENPILOT_PATH}:/openpilot
+            - ${OPENPILOT_BRIDGE_PATH}:/openpilot-bridge
             - /tmp/.X11-unix:/tmp/.X11-unix
         working_dir: /openpilot-bridge
     inference-can-bridge:
@@ -79,7 +81,7 @@ services:
             args:
                 GROUP_ID: ${GROUP_ID}
                 USER_ID: ${USER_ID}
-            context: ${HOME}/repos/inference-node-bridge
+            context: ${INFERENCE_NODE_BRIDGE_PATH}
             dockerfile: docker/Dockerfile
         command: bash -c "tmux new -d -s default; tmux send-keys '/root/mypython -u /inference-node-bridge/inference_can_bridge_node.py' ENTER; bash"
         environment:
@@ -94,5 +96,5 @@ services:
         tty: true
         user: user
         volumes:
-            - ${HOME}/repos/inference-node-bridge:/inference-node-bridge
+            - ${INFERENCE_NODE_BRIDGE_PATH}:/inference-node-bridge
         working_dir: /inference-node-bridge
