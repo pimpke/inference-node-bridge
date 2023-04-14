@@ -93,6 +93,8 @@ if [ ${SHOULD_CLONE_REPOS} = 1 ]; then
   git clone git@github.com:pimpke/inference-node-bridge.git "${INFERENCE_NODE_BRIDGE_PATH}"
 fi
 
+cd ${INFERENCE_NODE_BRIDGE_PATH}/docker
+
 if [ ${SHOULD_BUILD_PROJECTS} = 1 ]; then
   if [ ! -d "${OPENPILOT_BRIDGE_PATH}" ]; then
     echo "Can't build the openpilot project, the directory ${OPENPILOT_BRIDGE_PATH} doesn't exist"
