@@ -51,7 +51,7 @@ set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
 GROUP_ID=$(id -g)
 USER_ID=$(id -u)
-REPOS_PATH=${HOME}/repos # TODO: revert to inference-repos
+REPOS_PATH=${HOME}/inference-repos
 OPENPILOT_PATH=${REPOS_PATH}/openpilot
 ASLAN_PATH=${REPOS_PATH}/aslan
 OPENPILOT_BRIDGE_PATH=${REPOS_PATH}/openpilot-bridge
