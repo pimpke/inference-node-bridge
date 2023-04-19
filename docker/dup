@@ -2,7 +2,9 @@
 
 POSITIONAL_ARGS=()
 
+SHOULD_REMOVE_CLONED_REPOS=0
 SHOULD_CLONE_REPOS=0
+SHOULD_CLONE_LOCAL_REPOS=0
 SHOULD_BUILD_PROJECTS=0
 SHOULD_RUN_OPENPILOT_SIM=0
 DEBUG_OPENPILOT_BRIDGE=0
@@ -16,8 +18,16 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    --rm_cloned)
+      SHOULD_REMOVE_CLONED_REPOS=1
+      shift
+      ;;
     --clone)
       SHOULD_CLONE_REPOS=1
+      shift
+      ;;
+    --clone_local)
+      SHOULD_CLONE_LOCAL_REPOS=1
       shift
       ;;
     --build_projects)
@@ -51,11 +61,19 @@ set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
 GROUP_ID=$(id -g)
 USER_ID=$(id -u)
+
 REPOS_PATH=${HOME}/inference-repos
 OPENPILOT_PATH=${REPOS_PATH}/openpilot
 ASLAN_PATH=${REPOS_PATH}/aslan
 OPENPILOT_BRIDGE_PATH=${REPOS_PATH}/openpilot-bridge
 INFERENCE_NODE_BRIDGE_PATH=${REPOS_PATH}/inference-node-bridge
+REPO_PATHS=("${OPENPILOT_PATH}" "${ASLAN_PATH}" "${OPENPILOT_BRIDGE_PATH}" "${INFERENCE_NODE_BRIDGE_PATH}")
+
+LOCAL_REPOS_PATH=${HOME}/repos
+LOCAL_OPENPILOT_PATH=${LOCAL_REPOS_PATH}/bukapilot
+LOCAL_ASLAN_PATH=${LOCAL_REPOS_PATH}/aslan
+LOCAL_OPENPILOT_BRIDGE_PATH=${LOCAL_REPOS_PATH}/openpilot-bridge
+LOCAL_INFERENCE_NODE_BRIDGE_PATH=${LOCAL_REPOS_PATH}/inference-node-bridge
 
 SHOULD_BUILD_ASLAN=0
 SHOULD_BUILD_OPENPILOT=0
@@ -80,17 +98,78 @@ if [ ${SHOULD_EXEC} = 1 ]; then
   exit 0
 fi
 
-if [ ${SHOULD_CLONE_REPOS} = 1 ]; then
+if [[ ${SHOULD_REMOVE_CLONED_REPOS} = 1 ]]; then
+  for repo_path in ${REPO_PATHS[@]}; do
+      cd "${repo_path}"
+
+      if [ ! -z "$(git status --porcelain)" ]; then
+        echo "Git repo ${repo_path} is not clean, aborting the removal..."
+        exit 0
+      fi
+
+      cd - > /dev/null
+  done
+
+  echo "All changes commited in the cloned repos"
+  while true; do
+      read -p "Do you wish to remove all cloned repos? (yn): " yn
+    case $yn in
+      [Yy]* )
+        echo 'Removing the repos...'
+
+        for repo_path in ${REPO_PATHS[@]}; do
+          sudo rm -rf "${repo_path}"
+        done
+
+        if [[ -z "$(ls -A ${REPOS_PATH})" ]]; then
+          rm -rf "${REPOS_PATH}"
+        else
+          echo "Cannot remove ${REPOS_PATH} directory since it's not empty!"
+        fi
+
+        break
+        ;;
+      [Nn]* )
+        echo 'NOT REMOVING'
+        break
+        ;;
+      * )
+        echo "Please answer yes or no."
+        ;;
+    esac
+  done
+
+  exit 0
+fi
+
+if [[ ${SHOULD_CLONE_REPOS} = 1 || ${SHOULD_CLONE_LOCAL_REPOS} = 1 ]]; then
+  if [[ ${SHOULD_CLONE_REPOS} = 1 && ${SHOULD_CLONE_LOCAL_REPOS} = 1 ]]; then
+    echo "--clone and --clone_local cannot be used at the same time"
+    exit 1
+  fi
+
   if [ -d "${REPOS_PATH}" ]; then
     echo "Couldn't execute --clone, the directory ${REPOS_PATH} already exists"
     exit 1
   fi
-
   mkdir "${REPOS_PATH}"
-  git clone git@github.com:pimpke/openpilot.git --recurse-submodules --branch "0.9.1-sim" "${OPENPILOT_PATH}"
-  git clone git@github.com:goloskokovic/Aslan.git "${ASLAN_PATH}"
-  git clone git@github.com:pimpke/openpilot-bridge.git "${OPENPILOT_BRIDGE_PATH}"
-  git clone git@github.com:pimpke/inference-node-bridge.git "${INFERENCE_NODE_BRIDGE_PATH}"
+
+  if [[ ${SHOULD_CLONE_LOCAL_REPOS} = 1 ]]; then
+    if [ ! -d "${LOCAL_REPOS_PATH}" ]; then
+      echo "Can't clone local repos, the directory ${LOCAL_REPOS_PATH} doesn't exist"
+      exit 1
+    fi
+
+    git clone "${LOCAL_OPENPILOT_PATH}" --branch "0.8.13-sim" "${OPENPILOT_PATH}"
+    git clone "${LOCAL_ASLAN_PATH}" "${ASLAN_PATH}"
+    git clone "${LOCAL_OPENPILOT_BRIDGE_PATH}" "${OPENPILOT_BRIDGE_PATH}"
+    git clone "${LOCAL_INFERENCE_NODE_BRIDGE_PATH}" "${INFERENCE_NODE_BRIDGE_PATH}"
+  else
+    git clone git@github.com:pimpke/openpilot.git --branch "0.8.13-sim" "${OPENPILOT_PATH}"
+    git clone git@github.com:goloskokovic/Aslan.git "${ASLAN_PATH}"
+    git clone git@github.com:pimpke/openpilot-bridge.git "${OPENPILOT_BRIDGE_PATH}"
+    git clone git@github.com:pimpke/inference-node-bridge.git "${INFERENCE_NODE_BRIDGE_PATH}"
+  fi
 fi
 
 cd ${INFERENCE_NODE_BRIDGE_PATH}/docker
