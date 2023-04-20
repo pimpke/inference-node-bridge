@@ -63,8 +63,10 @@ services:
             DISPLAY: ${DISPLAY}
             QT_X11_NO_MITSHM: 1
             DEBUG_OPENPILOT_BRIDGE: ${DEBUG_OPENPILOT_BRIDGE}
+            DEBUG_FAKE_CAN: ${DEBUG_FAKE_CAN}
             SHOULD_BUILD_OPENPILOT: ${SHOULD_BUILD_OPENPILOT}
             SHOULD_RUN_OPENPILOT_SIM: ${SHOULD_RUN_OPENPILOT_SIM}
+            SHOULD_RUN_FAKE_CAN: ${SHOULD_RUN_FAKE_CAN}
         network_mode: host
         privileged: true
         shm_size: 1G
