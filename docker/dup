@@ -5,6 +5,7 @@ POSITIONAL_ARGS=()
 SHOULD_REMOVE_CLONED_REPOS=0
 SHOULD_CLONE_REPOS=0
 SHOULD_CLONE_LOCAL_REPOS=0
+SHOULD_UPDATE_REPOS=0
 SHOULD_BUILD_PROJECTS=0
 SHOULD_RUN_OPENPILOT_SIM=0
 DEBUG_OPENPILOT_BRIDGE=0
@@ -28,6 +29,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --clone_local)
       SHOULD_CLONE_LOCAL_REPOS=1
+      shift
+      ;;
+    --update)
+      SHOULD_UPDATE_REPOS=1
       shift
       ;;
     --build_projects)
@@ -96,6 +101,20 @@ export SHOULD_BUILD_OPENPILOT
 if [ ${SHOULD_EXEC} = 1 ]; then
   docker-compose exec -it ${EXEC_SERVICE_NAME} bash
   exit 0
+fi
+
+if [[ ${SHOULD_UPDATE_REPOS} = 1 ]]; then
+    for repo_path in ${REPO_PATHS[@]}; do
+      echo "========== ${repo_path} =========="
+      cd "${repo_path}"
+
+      git pull
+
+      cd - > /dev/null
+      echo
+    done
+
+    exit 0
 fi
 
 if [[ ${SHOULD_REMOVE_CLONED_REPOS} = 1 ]]; then
