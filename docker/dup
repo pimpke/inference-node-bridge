@@ -160,16 +160,21 @@ if [[ ${SHOULD_CLONE_REPOS} = 1 || ${SHOULD_CLONE_LOCAL_REPOS} = 1 ]]; then
       exit 1
     fi
 
-    git clone "${LOCAL_OPENPILOT_PATH}" --branch "0.8.13-sim" "${OPENPILOT_PATH}"
-    git clone "${LOCAL_ASLAN_PATH}" "${ASLAN_PATH}"
-    git clone "${LOCAL_OPENPILOT_BRIDGE_PATH}" "${OPENPILOT_BRIDGE_PATH}"
-    git clone "${LOCAL_INFERENCE_NODE_BRIDGE_PATH}" "${INFERENCE_NODE_BRIDGE_PATH}"
+    OPENPILOT_URL="${LOCAL_OPENPILOT_PATH}"
+    ASLAN_URL="${LOCAL_ASLAN_PATH}"
+    OPENPILOT_BRIDGE_URL="${LOCAL_OPENPILOT_BRIDGE_PATH}"
+    INFERENCE_NODE_BRIDGE_URL="${LOCAL_INFERENCE_NODE_BRIDGE_PATH}" 
   else
-    git clone git@github.com:pimpke/openpilot.git --branch "0.8.13-sim" "${OPENPILOT_PATH}"
-    git clone git@github.com:goloskokovic/Aslan.git "${ASLAN_PATH}"
-    git clone git@github.com:pimpke/openpilot-bridge.git "${OPENPILOT_BRIDGE_PATH}"
-    git clone git@github.com:pimpke/inference-node-bridge.git "${INFERENCE_NODE_BRIDGE_PATH}"
+    OPENPILOT_URL="git@github.com:pimpke/openpilot.git"
+    ASLAN_URL="git@github.com:goloskokovic/Aslan.git"
+    OPENPILOT_BRIDGE_URL="git@github.com:pimpke/openpilot-bridge.git"
+    INFERENCE_NODE_BRIDGE_URL="git@github.com:pimpke/inference-node-bridge.git"
   fi
+
+  git clone "${OPENPILOT_URL}" --branch "0.8.13-sim" "${OPENPILOT_PATH}"
+  git clone --recurse-submodules "${ASLAN_URL}" "${ASLAN_PATH}"
+  git clone "${OPENPILOT_BRIDGE_URL}" "${OPENPILOT_BRIDGE_PATH}"
+  git clone "${INFERENCE_NODE_BRIDGE_URL}" "${INFERENCE_NODE_BRIDGE_PATH}"
 fi
 
 cd ${INFERENCE_NODE_BRIDGE_PATH}/docker
