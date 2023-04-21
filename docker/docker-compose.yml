@@ -28,25 +28,25 @@ services:
             - /lib/modules:/lib/modules
             - /tmp/.X11-unix:/tmp/.X11-unix
         working_dir: /catkin_ws
-    carla-sim:
-        build:
-            context: ${OPENPILOT_BRIDGE_PATH}
-            dockerfile: docker/carla.Dockerfile
-        command: bash -c "tmux new -d -s default; tmux send-keys './CarlaUE4.sh -nosound -RenderOffScreen -benchmark -fps=20 -quality-level=Low' ENTER; bash"
-        deploy:
-            resources:
-                reservations:
-                    devices:
-                        - driver: nvidia
-                          count: 1
-                          capabilities: [gpu]
-        environment:
-            DISPLAY: :1
-        network_mode: host
-        privileged: true
-        stdin_open: true
-        stop_grace_period: 100ms
-        tty: true
+#    carla-sim:
+#        build:
+#            context: ${OPENPILOT_BRIDGE_PATH}
+#            dockerfile: docker/carla.Dockerfile
+#        command: bash -c "tmux new -d -s default; tmux send-keys './CarlaUE4.sh -nosound -RenderOffScreen -benchmark -fps=20 -quality-level=Low' ENTER; bash"
+#        deploy:
+#            resources:
+#                reservations:
+#                    devices:
+#                        - driver: nvidia
+#                          count: 1
+#                          capabilities: [gpu]
+#        environment:
+#            DISPLAY: :1
+#        network_mode: host
+#        privileged: true
+#        stdin_open: true
+#        stop_grace_period: 100ms
+#        tty: true
     openpilot-client:
         build:
             context: ${OPENPILOT_BRIDGE_PATH}
