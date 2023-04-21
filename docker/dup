@@ -4,6 +4,7 @@ POSITIONAL_ARGS=()
 
 SHOULD_REMOVE_CLONED_REPOS=0
 SHOULD_CLONE_REPOS=0
+SHOULD_CLONE_HTTPS_REPOS=0
 SHOULD_CLONE_LOCAL_REPOS=0
 SHOULD_UPDATE_REPOS=0
 SHOULD_BUILD_PROJECTS=0
@@ -23,6 +24,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --rm_cloned)
       SHOULD_REMOVE_CLONED_REPOS=1
+      shift
+      ;;
+    --github_https)
+      SHOULD_CLONE_HTTPS_REPOS=1
       shift
       ;;
     --clone)
@@ -201,10 +206,17 @@ if [[ ${SHOULD_CLONE_REPOS} = 1 || ${SHOULD_CLONE_LOCAL_REPOS} = 1 ]]; then
     OPENPILOT_BRIDGE_URL="${LOCAL_OPENPILOT_BRIDGE_PATH}"
     INFERENCE_NODE_BRIDGE_URL="${LOCAL_INFERENCE_NODE_BRIDGE_PATH}" 
   else
-    OPENPILOT_URL="git@github.com:pimpke/openpilot.git"
-    ASLAN_URL="git@github.com:goloskokovic/Aslan.git"
-    OPENPILOT_BRIDGE_URL="git@github.com:pimpke/openpilot-bridge.git"
-    INFERENCE_NODE_BRIDGE_URL="git@github.com:pimpke/inference-node-bridge.git"
+    if [[ ${SHOULD_CLONE_HTTPS_REPOS} = 1 ]]; then
+      OPENPILOT_URL="https://github.com/pimpke/openpilot.git"
+      ASLAN_URL="https://github.com/goloskokovic/Aslan.git"
+      OPENPILOT_BRIDGE_URL="https://github.com/pimpke/openpilot-bridge.git"
+      INFERENCE_NODE_BRIDGE_URL="https://github.com/pimpke/inference-node-bridge.git"
+    else
+      OPENPILOT_URL="git@github.com:pimpke/openpilot.git"
+      ASLAN_URL="git@github.com:goloskokovic/Aslan.git"
+      OPENPILOT_BRIDGE_URL="git@github.com:pimpke/openpilot-bridge.git"
+      INFERENCE_NODE_BRIDGE_URL="git@github.com:pimpke/inference-node-bridge.git"
+    fi
   fi
 
   git clone "${OPENPILOT_URL}" --branch "0.8.13-sim" "${OPENPILOT_PATH}"
