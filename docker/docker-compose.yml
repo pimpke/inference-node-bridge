@@ -67,6 +67,7 @@ services:
             SHOULD_BUILD_OPENPILOT: ${SHOULD_BUILD_OPENPILOT}
             SHOULD_RUN_OPENPILOT_SIM: ${SHOULD_RUN_OPENPILOT_SIM}
             SHOULD_RUN_FAKE_CAN: ${SHOULD_RUN_FAKE_CAN}
+            SHOULD_RUN_BOARDD: ${SHOULD_RUN_BOARDD}
         network_mode: host
         privileged: true
         shm_size: 1G
