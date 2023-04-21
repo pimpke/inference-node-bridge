@@ -8,8 +8,10 @@ SHOULD_CLONE_LOCAL_REPOS=0
 SHOULD_UPDATE_REPOS=0
 SHOULD_BUILD_PROJECTS=0
 SHOULD_RUN_OPENPILOT_SIM=0
+SHOULD_RUN_FAKE_CAN=0
 DEBUG_OPENPILOT_BRIDGE=0
 DEBUG_INFERENCE_NODE_BRIDGE=0
+DEBUG_FAKE_CAN=0
 SHOULD_EXEC=0
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -43,12 +45,20 @@ while [[ $# -gt 0 ]]; do
       SHOULD_RUN_OPENPILOT_SIM=1
       shift
       ;;
+    --fake_can)
+      SHOULD_RUN_FAKE_CAN=1
+      shift
+      ;;
     --dbg_openpilot_bridge)
       DEBUG_OPENPILOT_BRIDGE=1
       shift
       ;;
     --dbg_inference_node_bridge)
       DEBUG_INFERENCE_NODE_BRIDGE=1
+      shift
+      ;;
+    --dbg_fake_can)
+      DEBUG_FAKE_CAN=1
       shift
       ;;
     --*|-*)
@@ -63,6 +73,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+if [[ ${SHOULD_RUN_OPENPILOT_SIM} = 1 && ${SHOULD_RUN_FAKE_CAN} = 1 ]]; then
+    echo 'Cannot have both --sim and --fake_can'
+    exit 0
+fi
 
 GROUP_ID=$(id -g)
 USER_ID=$(id -u)
@@ -84,8 +99,10 @@ SHOULD_BUILD_ASLAN=0
 SHOULD_BUILD_OPENPILOT=0
 
 export SHOULD_RUN_OPENPILOT_SIM
+export SHOULD_RUN_FAKE_CAN
 export DEBUG_OPENPILOT_BRIDGE
 export DEBUG_INFERENCE_NODE_BRIDGE
+export DEBUG_FAKE_CAN
 
 export OPENPILOT_PATH
 export ASLAN_PATH
