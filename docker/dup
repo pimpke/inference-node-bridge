@@ -2,6 +2,7 @@
 
 POSITIONAL_ARGS=()
 
+SHOULD_RUN_DOCKER_COMPOSE_CMD=0
 SHOULD_REMOVE_CLONED_REPOS=0
 SHOULD_CLONE_REPOS=0
 SHOULD_CLONE_HTTPS_REPOS=0
@@ -16,6 +17,10 @@ DEBUG_FAKE_CAN=0
 SHOULD_EXEC=0
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --dc)
+      SHOULD_RUN_DOCKER_COMPOSE_CMD=1
+      shift
+      ;;
     --exec)
       SHOULD_EXEC=1
       EXEC_SERVICE_NAME="$2"
@@ -119,6 +124,12 @@ export USER_ID
 
 export SHOULD_BUILD_ASLAN
 export SHOULD_BUILD_OPENPILOT
+
+if [[ ${SHOULD_RUN_DOCKER_COMPOSE_CMD} = 1 ]] ; then
+  echo "$@"
+  docker-compose "$@"
+  exit 0
+fi
 
 if [ ${SHOULD_EXEC} = 1 ]; then
   docker-compose exec -it ${EXEC_SERVICE_NAME} bash
