@@ -52,13 +52,13 @@ services:
             context: ${OPENPILOT_BRIDGE_PATH}
             dockerfile: docker/openpilot.Dockerfile
         command: bash -c "./tmux_script.sh"
-        deploy:
-            resources:
-                reservations:
-                    devices:
-                        - driver: nvidia
-                          count: 1
-                          capabilities: [gpu]
+#        deploy:
+#            resources:
+#                reservations:
+#                    devices:
+#                        - driver: nvidia
+#                          count: 1
+#                          capabilities: [gpu]
         environment:
             DISPLAY: ${DISPLAY}
             QT_X11_NO_MITSHM: 1
