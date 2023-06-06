@@ -132,13 +132,20 @@ export SHOULD_BUILD_ASLAN
 export SHOULD_BUILD_OPENPILOT
 
 if [[ ${SHOULD_RUN_DOCKER_COMPOSE_CMD} = 1 ]] ; then
-  echo "$@"
+  cd "${INFERENCE_NODE_BRIDGE_PATH}/docker" || exit
+
+  echo "==========================="
+  echo "cmd to run: $*"
+  echo "curr dir: $PWD"
+  echo "==========================="
+
   docker-compose "$@"
   exit 0
 fi
 
 if [ ${SHOULD_EXEC} = 1 ]; then
-  docker-compose exec -it ${EXEC_SERVICE_NAME} bash
+  cd "${INFERENCE_NODE_BRIDGE_PATH}/docker" || exit
+  docker-compose exec -it "${EXEC_SERVICE_NAME}" bash
   exit 0
 fi
 
