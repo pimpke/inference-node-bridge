@@ -143,13 +143,13 @@ if [ ${SHOULD_EXEC} = 1 ]; then
 fi
 
 if [[ ${SHOULD_UPDATE_REPOS} = 1 ]]; then
-    for repo_path in ${REPO_PATHS[@]}; do
+    for repo_path in "${REPO_PATHS[@]}"; do
       echo "========== ${repo_path} =========="
-      cd "${repo_path}"
+      cd "${repo_path}" || exit
 
       git pull
 
-      cd - > /dev/null
+      cd - > /dev/null || exit
       echo
     done
 
@@ -157,29 +157,30 @@ if [[ ${SHOULD_UPDATE_REPOS} = 1 ]]; then
 fi
 
 if [[ ${SHOULD_REMOVE_CLONED_REPOS} = 1 ]]; then
-  for repo_path in ${REPO_PATHS[@]}; do
-      cd "${repo_path}"
 
-      if [ ! -z "$(git status --porcelain)" ]; then
+  for repo_path in "${REPO_PATHS[@]}"; do
+      cd "${repo_path}" || exit
+
+      if [ -n "$(git status --porcelain)" ]; then
         echo "Git repo ${repo_path} is not clean, aborting the removal..."
         exit 0
       fi
 
-      cd - > /dev/null
+      cd - > /dev/null || exit
   done
 
-  echo "All changes commited in the cloned repos"
+  echo "All changes committed in the cloned repos"
   while true; do
-      read -p "Do you wish to remove all cloned repos? (yn): " yn
+      read -r -p "Do you wish to remove all cloned repos? (yn): " yn
     case $yn in
       [Yy]* )
         echo 'Removing the repos...'
 
-        for repo_path in ${REPO_PATHS[@]}; do
+        for repo_path in "${REPO_PATHS[@]}"; do
           sudo rm -rf "${repo_path}"
         done
 
-        if [[ -z "$(ls -A ${REPOS_PATH})" ]]; then
+        if [[ -z "$(ls -A "${REPOS_PATH}")" ]]; then
           rm -rf "${REPOS_PATH}"
         else
           echo "Cannot remove ${REPOS_PATH} directory since it's not empty!"
@@ -242,7 +243,7 @@ if [[ ${SHOULD_CLONE_REPOS} = 1 || ${SHOULD_CLONE_LOCAL_REPOS} = 1 ]]; then
   git clone "${INFERENCE_NODE_BRIDGE_URL}" "${INFERENCE_NODE_BRIDGE_PATH}"
 fi
 
-cd ${INFERENCE_NODE_BRIDGE_PATH}/docker
+cd "${INFERENCE_NODE_BRIDGE_PATH}/docker" || exit
 
 if [ ${SHOULD_BUILD_PROJECTS} = 1 ]; then
   if [ ! -d "${OPENPILOT_BRIDGE_PATH}" ]; then
