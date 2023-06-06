@@ -267,4 +267,8 @@ if [ ${SHOULD_BUILD_PROJECTS} = 1 ]; then
   SHOULD_BUILD_ASLAN=0
 fi
 
+if [[ ${SHOULD_RUN_OPENPILOT_SIM} = 1 ]]; then
+    xhost +local:root
+fi
+
 docker-compose rm -f && docker-compose up
