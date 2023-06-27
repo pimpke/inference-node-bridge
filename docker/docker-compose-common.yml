@@ -1,0 +1,25 @@
+services:
+    common:
+        build:
+            args:
+                GROUP_ID: ${GROUP_ID}
+                USER_ID: ${USER_ID}
+        cap_add:
+            - SYS_PTRACE
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
+        environment:
+            DISPLAY: ${DISPLAY}
+            QT_X11_NO_MITSHM: 1
+        ipc: host
+        network_mode: host
+        stdin_open: true
+        stop_grace_period: 100ms
+        tty: true
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix

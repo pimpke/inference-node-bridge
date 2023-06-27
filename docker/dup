@@ -12,10 +12,13 @@ SHOULD_BUILD_PROJECTS=0
 SHOULD_RUN_OPENPILOT_SIM=0
 SHOULD_RUN_FAKE_CAN=0
 SHOULD_RUN_BOARDD=0
+SHOULD_USE_TORCH_MODEL=0
+SHOULD_USE_LOCAL_PROFILE=1  # TODO: set back to 0
 DEBUG_OPENPILOT_BRIDGE=0
 DEBUG_INFERENCE_NODE_BRIDGE=0
 DEBUG_FAKE_CAN=0
 SHOULD_EXEC=0
+
 while [[ $# -gt 0 ]]; do
   case $1 in
     --dc)
@@ -64,6 +67,14 @@ while [[ $# -gt 0 ]]; do
       SHOULD_RUN_BOARDD=1
       shift
       ;;
+    --use_torch_model)
+      SHOULD_USE_TORCH_MODEL=1
+      shift
+      ;;
+    --local_profile)
+      SHOULD_USE_LOCAL_PROFILE=1
+      shift
+      ;;
     --dbg_openpilot_bridge)
       DEBUG_OPENPILOT_BRIDGE=1
       shift
@@ -94,14 +105,30 @@ if [[ ${SHOULD_RUN_OPENPILOT_SIM} = 1 && ${SHOULD_RUN_FAKE_CAN} = 1 ]]; then
     exit 0
 fi
 
+DEV_OPS_PATH=$HOME/repos/dev_ops
+source "$DEV_OPS_PATH/script_variables.bash"
+
+if [ -z "${inode_pth_model_path}" ]; then
+  echo 'Cannot find inode_pth_model_path var'
+  exit 1
+fi
+
+export INODE_PTH_MODEL_PATH=${inode_pth_model_path}
+export ROSBAG_FNAME=${inode_rosbag_fname}
+
 GROUP_ID=$(id -g)
 USER_ID=$(id -u)
 
-REPOS_PATH=${HOME}/inference-repos
+#REPOS_PATH=${HOME}/inference-repos
+REPOS_PATH=${HOME}/repos
 OPENPILOT_PATH=${REPOS_PATH}/openpilot
+#OPENPILOT_PATH=${REPOS_PATH}/bukapilot
 ASLAN_PATH=${REPOS_PATH}/aslan
 OPENPILOT_BRIDGE_PATH=${REPOS_PATH}/openpilot-bridge
 INFERENCE_NODE_BRIDGE_PATH=${REPOS_PATH}/inference-node-bridge
+INFERENCE_NODE_PATH=${REPOS_PATH}/inference_node
+TRANSFUSER_PATH=${REPOS_PATH}/transfuser
+TWIZY_TRANSFUSER_PATH=${REPOS_PATH}/twizy_transfuser
 REPO_PATHS=("${OPENPILOT_PATH}" "${ASLAN_PATH}" "${OPENPILOT_BRIDGE_PATH}" "${INFERENCE_NODE_BRIDGE_PATH}")
 
 LOCAL_REPOS_PATH=${HOME}/repos
@@ -113,9 +140,21 @@ LOCAL_INFERENCE_NODE_BRIDGE_PATH=${LOCAL_REPOS_PATH}/inference-node-bridge
 SHOULD_BUILD_ASLAN=0
 SHOULD_BUILD_OPENPILOT=0
 
+if [[ ${SHOULD_USE_LOCAL_PROFILE} = 1 ]]; then
+  PROFILE='local'
+else
+  PROFILE='x30'
+fi
+
+call_docker_compose() {
+#  docker-compose -f docker-compose-test.yml -f docker-compose.yml --profile ${PROFILE} "$@"
+  docker-compose --profile ${PROFILE} "$@"
+}
+
 export SHOULD_RUN_OPENPILOT_SIM
 export SHOULD_RUN_FAKE_CAN
 export SHOULD_RUN_BOARDD
+export SHOULD_USE_TORCH_MODEL
 export DEBUG_OPENPILOT_BRIDGE
 export DEBUG_INFERENCE_NODE_BRIDGE
 export DEBUG_FAKE_CAN
@@ -124,6 +163,9 @@ export OPENPILOT_PATH
 export ASLAN_PATH
 export OPENPILOT_BRIDGE_PATH
 export INFERENCE_NODE_BRIDGE_PATH
+export INFERENCE_NODE_PATH
+export TRANSFUSER_PATH
+export TWIZY_TRANSFUSER_PATH
 
 export GROUP_ID
 export USER_ID
@@ -139,17 +181,20 @@ if [[ ${SHOULD_RUN_DOCKER_COMPOSE_CMD} = 1 ]] ; then
   echo "curr dir: $PWD"
   echo "==========================="
 
-  docker-compose "$@"
+  call_docker_compose "$@"
   exit 0
 fi
 
 if [ ${SHOULD_EXEC} = 1 ]; then
   cd "${INFERENCE_NODE_BRIDGE_PATH}/docker" || exit
-  docker-compose exec -it "${EXEC_SERVICE_NAME}" bash
+  call_docker_compose exec -it "${EXEC_SERVICE_NAME}" bash
   exit 0
 fi
 
 if [[ ${SHOULD_UPDATE_REPOS} = 1 ]]; then
+    echo 'Update currently unsupported'
+    exit 0
+
     for repo_path in "${REPO_PATHS[@]}"; do
       echo "========== ${repo_path} =========="
       cd "${repo_path}" || exit
@@ -164,6 +209,8 @@ if [[ ${SHOULD_UPDATE_REPOS} = 1 ]]; then
 fi
 
 if [[ ${SHOULD_REMOVE_CLONED_REPOS} = 1 ]]; then
+  echo 'Remove currently unsupported'
+  exit 0
 
   for repo_path in "${REPO_PATHS[@]}"; do
       cd "${repo_path}" || exit
@@ -209,6 +256,9 @@ if [[ ${SHOULD_REMOVE_CLONED_REPOS} = 1 ]]; then
 fi
 
 if [[ ${SHOULD_CLONE_REPOS} = 1 || ${SHOULD_CLONE_LOCAL_REPOS} = 1 ]]; then
+  echo 'Clone currently unsupported'
+  exit 0
+
   if [[ ${SHOULD_CLONE_REPOS} = 1 && ${SHOULD_CLONE_LOCAL_REPOS} = 1 ]]; then
     echo "--clone and --clone_local cannot be used at the same time"
     exit 1
@@ -259,8 +309,8 @@ if [ ${SHOULD_BUILD_PROJECTS} = 1 ]; then
   fi
 
   SHOULD_BUILD_OPENPILOT=1
-  docker-compose rm -f openpilot-client
-  docker-compose up openpilot-client
+  call_docker_compose rm -f openpilot-client
+  call_docker_compose up openpilot-client
   SHOULD_BUILD_OPENPILOT=0
 
   if [ ! -d "${ASLAN_PATH}" ]; then
@@ -269,13 +319,15 @@ if [ ${SHOULD_BUILD_PROJECTS} = 1 ]; then
   fi
 
   SHOULD_BUILD_ASLAN=1
-  docker-compose rm -f aslan
-  docker-compose up aslan
+  call_docker_compose rm -f aslan
+  call_docker_compose up aslan
   SHOULD_BUILD_ASLAN=0
+
+  exit 0
 fi
 
 if [[ ${SHOULD_RUN_OPENPILOT_SIM} = 1 ]]; then
     xhost +local:root
 fi
 
-docker-compose rm -f && docker-compose up
+call_docker_compose rm -f && call_docker_compose up

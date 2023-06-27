@@ -1,0 +1,19 @@
+services:
+    inode:
+        extends:
+            file: docker-compose-common.yml
+            service: common
+        build:
+            dockerfile: docker/Dockerfile
+        command: bash -c "./tmux_script.sh"
+        user: ${USER_ID}:${GROUP_ID}
+        volumes:
+            - ${HOME}/bags_ssd:/bags_ssd
+            - ${HOME}/repos:/repos
+            - ${HOME}/repos/common:/common
+            - ${HOME}/ww/bags:/bags
+            - ${HOME}/ww/logs:/logs
+            - ${HOME}/ww/model_ckpt:/model_ckpt
+            - ${HOME}/ww/runs:/runs
+            - ${HOME}/ww/torch.hub.checkpoints:/home/user/.cache/torch/hub
+        working_dir: /opt/project

@@ -1,105 +1,114 @@
+x-all-profiles: &all-profiles
+    profiles: ["local", "x30"]
 services:
     aslan:
+        extends:
+            file: docker-compose-common.yml
+            service: common
+        <<: *all-profiles
         build:
             context: ${ASLAN_PATH}
             dockerfile: aslan_docker/Dockerfile
-        cap_add:
-            - SYS_PTRACE
         command: bash -c "./run"
         devices:
             - /dev/bus/usb:/dev/bus/usb
             - /dev/dri:/dev/dri
             - /dev/input:/dev/input
         environment:
-            DISPLAY: ${DISPLAY}
             LD_LIBRARY_PATH: /usr/local/nvidia/lib64
             NVIDIA_DRIVER_CAPABILITIES: compute,utility,graphics,display
             NVIDIA_VISIBLE_DEVICES: all
             SHOULD_BUILD_ASLAN: ${SHOULD_BUILD_ASLAN}
-        network_mode: host
         privileged: true
-        stdin_open: true
-        stop_grace_period: 100ms
-        tty: true
         user: aslan_user
         volumes:
             - ${HOME}/.ssh:/root/.ssh
             - ${ASLAN_PATH}:/catkin_ws
             - /lib/modules:/lib/modules
-            - /tmp/.X11-unix:/tmp/.X11-unix
         working_dir: /catkin_ws
     carla-sim:
+        extends:
+            file: docker-compose-common.yml
+            service: common
+        <<: *all-profiles
         build:
             context: ${OPENPILOT_BRIDGE_PATH}
             dockerfile: docker/carla.Dockerfile
         command: bash -c "tmux new -d -s default; tmux send-keys './CarlaUE4.sh -nosound -benchmark -RenderOffScreen -fps=20 -quality-level=Low' ENTER; bash"
-        deploy:
-            resources:
-                reservations:
-                    devices:
-                        - driver: nvidia
-                          count: 1
-                          capabilities: [gpu]
-        environment:
-            DISPLAY: :1
-        network_mode: host
         privileged: true
-        stdin_open: true
-        stop_grace_period: 100ms
-        tty: true
         volumes:
             - /var/run:/var/run
     openpilot-client:
+        extends:
+            file: docker-compose-common.yml
+            service: common
+        <<: *all-profiles
         build:
             context: ${OPENPILOT_BRIDGE_PATH}
             dockerfile: docker/openpilot.Dockerfile
-        command: bash -c "./tmux_script.sh"
-        deploy:
-            resources:
-                reservations:
-                    devices:
-                        - driver: nvidia
-                          count: 1
-                          capabilities: [gpu]
+        command: bash -c "./tmux_script.sh --dual_camera"
         environment:
-            DISPLAY: ${DISPLAY}
-            QT_X11_NO_MITSHM: 1
             DEBUG_OPENPILOT_BRIDGE: ${DEBUG_OPENPILOT_BRIDGE}
             DEBUG_FAKE_CAN: ${DEBUG_FAKE_CAN}
             SHOULD_BUILD_OPENPILOT: ${SHOULD_BUILD_OPENPILOT}
             SHOULD_RUN_OPENPILOT_SIM: ${SHOULD_RUN_OPENPILOT_SIM}
             SHOULD_RUN_FAKE_CAN: ${SHOULD_RUN_FAKE_CAN}
             SHOULD_RUN_BOARDD: ${SHOULD_RUN_BOARDD}
-        network_mode: host
+            PYTHONPATH: /common:/openpilot:/openpilot-bridge
         privileged: true
         shm_size: 1G
         stdin_open: true
-        stop_grace_period: 100ms
-        tty: true
         volumes:
             - ${OPENPILOT_PATH}:/openpilot
             - ${OPENPILOT_BRIDGE_PATH}:/openpilot-bridge
-            - /tmp/.X11-unix:/tmp/.X11-unix
+            - ${HOME}/repos/common:/common
         working_dir: /openpilot-bridge
     inference-can-bridge:
+        extends:
+            file: docker-compose-common.yml
+            service: common
+        <<: *all-profiles
         build:
-            args:
-                GROUP_ID: ${GROUP_ID}
-                USER_ID: ${USER_ID}
             context: ${INFERENCE_NODE_BRIDGE_PATH}
             dockerfile: docker/Dockerfile
         command: bash -c "tmux new -d -s default; tmux send-keys '/root/mypython -u /inference-node-bridge/inference_can_bridge_node.py' ENTER; bash"
         environment:
             DEBUG_INFERENCE_NODE_BRIDGE: ${DEBUG_INFERENCE_NODE_BRIDGE}
-            DISPLAY: ${DISPLAY}
             PYTHONPATH: /inference-node-bridge
             PYTHONUNBUFFERED: 1
-            QT_X11_NO_MITSHM: 1
-        network_mode: host
-        stdin_open: true
-        stop_grace_period: 100ms
-        tty: true
         user: user
         volumes:
             - ${INFERENCE_NODE_BRIDGE_PATH}:/inference-node-bridge
         working_dir: /inference-node-bridge
+    inference-node-fast:
+        extends:
+            file: docker-compose-inode.yml
+            service: inode
+        <<: *all-profiles
+        build:
+            context: ${INFERENCE_NODE_PATH}
+        environment:
+            SHOULD_USE_TORCH_MODEL: ${SHOULD_USE_TORCH_MODEL}
+            ROSBAG_FNAME: ${ROSBAG_FNAME}
+        volumes:
+            - ${INFERENCE_NODE_PATH}:/opt/project
+    transfuser:
+        extends:
+            file: docker-compose-inode.yml
+            service: inode
+        build:
+            context: ${TRANSFUSER_PATH}
+        environment:
+            INODE_PTH_MODEL_PATH: ${INODE_PTH_MODEL_PATH}
+        profiles: ["local"]
+        volumes:
+            - ${TRANSFUSER_PATH}:/opt/project
+    twizy-transfuser:
+        extends:
+            file: docker-compose-inode.yml
+            service: inode
+        build:
+            context: ${TWIZY_TRANSFUSER_PATH}
+        profiles: ["x30"]
+        volumes:
+            - ${TWIZY_TRANSFUSER_PATH}:/opt/project
