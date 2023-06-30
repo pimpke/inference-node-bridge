@@ -1,5 +1,5 @@
 x-all-profiles: &all-profiles
-    profiles: ["local", "x30"]
+    profiles: ["local", "x30", "sim"]
 services:
     aslan:
         extends:
@@ -30,7 +30,7 @@ services:
         extends:
             file: docker-compose-common.yml
             service: common
-        <<: *all-profiles
+        profiles: ["sim"]
         build:
             context: ${OPENPILOT_BRIDGE_PATH}
             dockerfile: docker/carla.Dockerfile
@@ -42,7 +42,7 @@ services:
         extends:
             file: docker-compose-common.yml
             service: common
-        <<: *all-profiles
+        profiles: ["local", "x30", "sim", "test_processes"]
         build:
             context: ${OPENPILOT_BRIDGE_PATH}
             dockerfile: docker/openpilot.Dockerfile
@@ -51,9 +51,11 @@ services:
             DEBUG_OPENPILOT_BRIDGE: ${DEBUG_OPENPILOT_BRIDGE}
             DEBUG_FAKE_CAN: ${DEBUG_FAKE_CAN}
             SHOULD_BUILD_OPENPILOT: ${SHOULD_BUILD_OPENPILOT}
+            SHOULD_CLEAN_OPENPILOT: ${SHOULD_CLEAN_OPENPILOT}
             SHOULD_RUN_OPENPILOT_SIM: ${SHOULD_RUN_OPENPILOT_SIM}
             SHOULD_RUN_FAKE_CAN: ${SHOULD_RUN_FAKE_CAN}
             SHOULD_RUN_BOARDD: ${SHOULD_RUN_BOARDD}
+            SHOULD_RUN_TEST_PROCESSES: ${SHOULD_RUN_TEST_PROCESSES}
             PYTHONPATH: /common:/openpilot:/openpilot-bridge
         privileged: true
         shm_size: 1G
@@ -80,7 +82,7 @@ services:
         volumes:
             - ${INFERENCE_NODE_BRIDGE_PATH}:/inference-node-bridge
         working_dir: /inference-node-bridge
-    inference-node-fast:
+    inference-node:
         extends:
             file: docker-compose-inode.yml
             service: inode
@@ -100,7 +102,7 @@ services:
             context: ${TRANSFUSER_PATH}
         environment:
             INODE_PTH_MODEL_PATH: ${INODE_PTH_MODEL_PATH}
-        profiles: ["local"]
+        profiles: ["local", "sim"]
         volumes:
             - ${TRANSFUSER_PATH}:/opt/project
     twizy-transfuser:
