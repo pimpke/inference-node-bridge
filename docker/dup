@@ -9,11 +9,14 @@ SHOULD_CLONE_HTTPS_REPOS=0
 SHOULD_CLONE_LOCAL_REPOS=0
 SHOULD_UPDATE_REPOS=0
 SHOULD_BUILD_PROJECTS=0
+SHOULD_BUILD_OPENPILOT=0
+SHOULD_BUILD_ASLAN=0
+SHOULD_CLEAN_OPENPILOT=0
 SHOULD_RUN_OPENPILOT_SIM=0
 SHOULD_RUN_FAKE_CAN=0
 SHOULD_RUN_BOARDD=0
 SHOULD_USE_TORCH_MODEL=0
-SHOULD_USE_LOCAL_PROFILE=1  # TODO: set back to 0
+PROFILE="local" # TODO: set back to x30
 DEBUG_OPENPILOT_BRIDGE=0
 DEBUG_INFERENCE_NODE_BRIDGE=0
 DEBUG_FAKE_CAN=0
@@ -28,6 +31,17 @@ while [[ $# -gt 0 ]]; do
     --exec)
       SHOULD_EXEC=1
       EXEC_SERVICE_NAME="$2"
+      shift
+      shift
+      ;;
+    --profile)
+      PROFILE="$2"
+
+      if [[ ! "$PROFILE" =~ ^(local|x30|sim|test_processes)$ ]]; then
+        echo "Invalid profile. Aborting..."
+        exit 0
+      fi
+
       shift
       shift
       ;;
@@ -55,10 +69,22 @@ while [[ $# -gt 0 ]]; do
       SHOULD_BUILD_PROJECTS=1
       shift
       ;;
-    --sim)
-      SHOULD_RUN_OPENPILOT_SIM=1
+    --build_aslan)
+      SHOULD_BUILD_ASLAN=1
       shift
       ;;
+    --build_openpilot)
+      SHOULD_BUILD_OPENPILOT=1
+      shift
+      ;;
+    --clean_openpilot)
+      SHOULD_CLEAN_OPENPILOT=1
+      shift
+      ;;
+#    --sim)
+#      SHOULD_RUN_OPENPILOT_SIM=1
+#      shift
+#      ;;
     --fake_can)
       SHOULD_RUN_FAKE_CAN=1
       shift
@@ -69,10 +95,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --use_torch_model)
       SHOULD_USE_TORCH_MODEL=1
-      shift
-      ;;
-    --local_profile)
-      SHOULD_USE_LOCAL_PROFILE=1
       shift
       ;;
     --dbg_openpilot_bridge)
@@ -99,6 +121,16 @@ while [[ $# -gt 0 ]]; do
 done
 
 set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+SHOULD_RUN_TEST_PROCESSES=0
+
+if [[ "${PROFILE}" == "test_processes" ]]; then
+  SHOULD_RUN_TEST_PROCESSES=1
+fi
+
+if [[ "${PROFILE}" == "sim" ]]; then
+  SHOULD_RUN_OPENPILOT_SIM=1
+fi
 
 if [[ ${SHOULD_RUN_OPENPILOT_SIM} = 1 && ${SHOULD_RUN_FAKE_CAN} = 1 ]]; then
     echo 'Cannot have both --sim and --fake_can'
@@ -137,23 +169,15 @@ LOCAL_ASLAN_PATH=${LOCAL_REPOS_PATH}/aslan
 LOCAL_OPENPILOT_BRIDGE_PATH=${LOCAL_REPOS_PATH}/openpilot-bridge
 LOCAL_INFERENCE_NODE_BRIDGE_PATH=${LOCAL_REPOS_PATH}/inference-node-bridge
 
-SHOULD_BUILD_ASLAN=0
-SHOULD_BUILD_OPENPILOT=0
-
-if [[ ${SHOULD_USE_LOCAL_PROFILE} = 1 ]]; then
-  PROFILE='local'
-else
-  PROFILE='x30'
-fi
-
 call_docker_compose() {
 #  docker-compose -f docker-compose-test.yml -f docker-compose.yml --profile ${PROFILE} "$@"
-  docker-compose --profile ${PROFILE} "$@"
+  docker-compose --profile "${PROFILE}" "$@"
 }
 
 export SHOULD_RUN_OPENPILOT_SIM
 export SHOULD_RUN_FAKE_CAN
 export SHOULD_RUN_BOARDD
+export SHOULD_RUN_TEST_PROCESSES
 export SHOULD_USE_TORCH_MODEL
 export DEBUG_OPENPILOT_BRIDGE
 export DEBUG_INFERENCE_NODE_BRIDGE
@@ -172,6 +196,7 @@ export USER_ID
 
 export SHOULD_BUILD_ASLAN
 export SHOULD_BUILD_OPENPILOT
+export SHOULD_CLEAN_OPENPILOT
 
 if [[ ${SHOULD_RUN_DOCKER_COMPOSE_CMD} = 1 ]] ; then
   cd "${INFERENCE_NODE_BRIDGE_PATH}/docker" || exit
@@ -187,7 +212,7 @@ fi
 
 if [ ${SHOULD_EXEC} = 1 ]; then
   cd "${INFERENCE_NODE_BRIDGE_PATH}/docker" || exit
-  call_docker_compose exec -it "${EXEC_SERVICE_NAME}" bash
+  call_docker_compose exec -it "${EXEC_SERVICE_NAME}" bash -c "tmux a -t default; bash"
   exit 0
 fi
 
@@ -302,27 +327,33 @@ fi
 
 cd "${INFERENCE_NODE_BRIDGE_PATH}/docker" || exit
 
-if [ ${SHOULD_BUILD_PROJECTS} = 1 ]; then
+if [[ ${SHOULD_BUILD_PROJECTS} = 1 ]]; then
+  SHOULD_BUILD_ASLAN=1
+  SHOULD_BUILD_OPENPILOT=1
+fi
+
+if [[ ${SHOULD_BUILD_OPENPILOT} = 1 ]]; then
   if [ ! -d "${OPENPILOT_BRIDGE_PATH}" ]; then
     echo "Can't build the openpilot project, the directory ${OPENPILOT_BRIDGE_PATH} doesn't exist"
     exit 1
   fi
 
-  SHOULD_BUILD_OPENPILOT=1
   call_docker_compose rm -f openpilot-client
   call_docker_compose up openpilot-client
-  SHOULD_BUILD_OPENPILOT=0
+fi
 
+if [[ ${SHOULD_BUILD_ASLAN} = 1 ]]; then
   if [ ! -d "${ASLAN_PATH}" ]; then
     echo "Can't build the aslan project, the directory ${ASLAN_PATH} doesn't exist"
     exit 1
   fi
 
-  SHOULD_BUILD_ASLAN=1
   call_docker_compose rm -f aslan
   call_docker_compose up aslan
-  SHOULD_BUILD_ASLAN=0
+fi
 
+if [[ ${SHOULD_BUILD_ASLAN} = 1 || ${SHOULD_BUILD_OPENPILOT} = 1 ]]; then
+  echo "Finished building project(s), exiting..."
   exit 0
 fi
 
