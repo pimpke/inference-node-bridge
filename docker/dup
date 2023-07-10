@@ -20,6 +20,7 @@ PROFILE="local" # TODO: set back to x30
 DEBUG_OPENPILOT_BRIDGE=0
 DEBUG_INFERENCE_NODE_BRIDGE=0
 DEBUG_FAKE_CAN=0
+DEBUG_UI=0
 SHOULD_EXEC=0
 
 while [[ $# -gt 0 ]]; do
@@ -109,6 +110,10 @@ while [[ $# -gt 0 ]]; do
       DEBUG_FAKE_CAN=1
       shift
       ;;
+    --dbg_ui)
+      DEBUG_UI=1
+      shift
+      ;;
     --*|-*)
       echo "Unknown option $1"
       exit 1
@@ -182,6 +187,7 @@ export SHOULD_USE_TORCH_MODEL
 export DEBUG_OPENPILOT_BRIDGE
 export DEBUG_INFERENCE_NODE_BRIDGE
 export DEBUG_FAKE_CAN
+export DEBUG_UI
 
 export OPENPILOT_PATH
 export ASLAN_PATH

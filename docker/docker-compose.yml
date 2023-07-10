@@ -34,10 +34,13 @@ services:
         build:
             context: ${OPENPILOT_BRIDGE_PATH}
             dockerfile: docker/carla.Dockerfile
-        command: bash -c "tmux new -d -s default; tmux send-keys './CarlaUE4.sh -nosound -benchmark -RenderOffScreen -fps=20 -quality-level=Low' ENTER; bash"
+#        command: bash -c "tmux new -d -s default; tmux send-keys './CarlaUE4.sh -nosound -benchmark -RenderOffScreen -fps=20 -quality-level=Low' ENTER; bash"
+        command: bash -c "./tmux_carla_script.sh"
         privileged: true
         volumes:
+            - ${OPENPILOT_BRIDGE_PATH}:/openpilot-bridge
             - /var/run:/var/run
+        working_dir: /openpilot-bridge
     openpilot-client:
         extends:
             file: docker-compose-common.yml
@@ -50,6 +53,7 @@ services:
         environment:
             DEBUG_OPENPILOT_BRIDGE: ${DEBUG_OPENPILOT_BRIDGE}
             DEBUG_FAKE_CAN: ${DEBUG_FAKE_CAN}
+            DEBUG_UI: ${DEBUG_UI}
             SHOULD_BUILD_OPENPILOT: ${SHOULD_BUILD_OPENPILOT}
             SHOULD_CLEAN_OPENPILOT: ${SHOULD_CLEAN_OPENPILOT}
             SHOULD_RUN_OPENPILOT_SIM: ${SHOULD_RUN_OPENPILOT_SIM}
@@ -64,6 +68,7 @@ services:
             - ${OPENPILOT_PATH}:/openpilot
             - ${OPENPILOT_BRIDGE_PATH}:/openpilot-bridge
             - ${HOME}/repos/common:/common
+            - ${HOME}/docker-volumes/vscode-server:/root/.vscode-server
         working_dir: /openpilot-bridge
     inference-can-bridge:
         extends:
